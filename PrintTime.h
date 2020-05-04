@@ -21,9 +21,13 @@
 class PrintTime : public TimedTask
 {
 public:
-  PrintTime(int _refresh_rate, Debugger *_ptrDebugger, LCD * _ptr_lcd ); 
+  PrintTime(int _refresh_rate, Debugger *_ptrDebugger, LCD * _ptr_lcd); 
   virtual void run(uint32_t now);
   virtual void update(uint32_t now){};
+
+  virtual void run(DateTime  dt_now);
+  virtual void update(DateTime  dt_now){};
+
 
 private:
   int refresh_rate;        // Blink rate.

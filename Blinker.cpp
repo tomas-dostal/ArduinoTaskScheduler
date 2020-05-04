@@ -9,8 +9,8 @@
 // *** Define the Debugger Class as type Task
 // ***
 #include "Task.h"
-#include "debugger.h"
-#include "blinker.h"
+#include "Debugger.h"
+#include "Blinker.h"
 
 
 
@@ -24,31 +24,47 @@ Blinker::Blinker(uint8_t _pin, uint32_t _rate, Debugger *_ptrDebugger)
   pin(_pin),
   rate(_rate),
   on(false),
+  debug_enabled(true),
   ptrDebugger(_ptrDebugger)
   {
     pinMode(pin, OUTPUT);     // Set pin for output.
   }
 
-void Blinker::update(uint32_t now)
-{}; 
+  
+Blinker::Blinker(uint8_t _pin, uint32_t _rate)
+  : TimedTask(millis()),
+  pin(_pin),
+  rate(_rate),
+  on(false),
+  debug_enabled(false)
+  {
+    pinMode(pin, OUTPUT);     // Set pin for output.
+  }
+
 
 // ***
 // *** Blinker::run() <--executed by TaskScheduler as a result of canRun() returning true.
 // ***
 void Blinker::run(uint32_t now)
 {
+  Serial.println("Blinker"); 
   // If the LED is on, turn it off and remember the state.
   if (on) {
     digitalWrite(pin, LOW);
     on = false;
-    ptrDebugger->debugWrite("BLINKER: OFF");
+    if(debug_enabled) ptrDebugger->debugWrite("BLINKER: OFF");
     // If the LED is off, turn it on and remember the state.
   } else {
     digitalWrite(pin, HIGH);
     on = true;
     //Send output to Serial Monitor via debugger
-    ptrDebugger->debugWrite("BLINKER: ON");
+    if(debug_enabled) ptrDebugger->debugWrite("BLINKER: ON");
   }
   // Run again in the specified number of milliseconds.
   incRunTime(rate);
+}
+
+void Blinker::run(DateTime  dt_now) 
+{
+  run(millis());   
 }

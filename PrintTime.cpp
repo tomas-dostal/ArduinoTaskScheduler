@@ -14,9 +14,9 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 // *** Define the Debugger Class as type Task
 // ***
 #include "Task.h"
-#include "debugger.h"
-#include "display.h"
-#include "printtime.h"
+#include "Debugger.h"
+#include "Display.h"
+#include "PrintTime.h"
 
 
 
@@ -40,6 +40,11 @@ PrintTime::PrintTime(int _refresh_rate, Debugger *_ptrDebugger, LCD * _ptr_lcd) 
 // ***
 // *** PrintTime::run() <--executed by TaskScheduler as a result of canRun() returning true.
 // ***
+
+void PrintTime::run(DateTime dt_now)
+{
+  this->run(millis()); 
+}
 void PrintTime::run(uint32_t now)
 {
     int line = 0;

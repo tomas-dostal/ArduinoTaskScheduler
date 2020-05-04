@@ -10,6 +10,8 @@
 #ifndef Task_h
 #define Task_h
 
+#include "RTClib.h" 
+
 #include <stdint.h>
 
 // Maximum time into the future - approximately 50 days.
@@ -28,10 +30,16 @@ class Task {
 
 public:
 
+    virtual bool canRun(DateTime dt_now) = 0;    //<--ABSTRACT
+    virtual bool canUpdate(DateTime dt_now) = 0;    //<--ABSTRACT
+    virtual void run(DateTime dt_now) = 0;     //<--ABSTRACT
+    virtual void update(DateTime dt_now) = 0;
+    
     virtual bool canRun(uint32_t now) = 0;		//<--ABSTRACT
     virtual bool canUpdate(uint32_t now) = 0;    //<--ABSTRACT
     virtual void run(uint32_t now) = 0;			//<--ABSTRACT
-    virtual void update(uint32_t now);
+    virtual void update(uint32_t now) = 0;
+    virtual bool isRtcTask(){return false;};
 
 };
 
@@ -46,17 +54,26 @@ public:
      * now - current time, in milliseconds.
      */
     virtual bool canRun(uint32_t now);
+    virtual bool canRun(DateTime dt_now);     //<--ABSTRACT
+
+    //virtual void update(uint32_t now);
+    //virtual void update(DateTime dt_now);
+
     virtual bool canUpdate(uint32_t now){return false;};
+    virtual bool canUpdate(DateTime dt_now){return false;};
 
     /*
      * Mark the task as runnable.
      */
     inline void setRunnable() { runFlag = true; }
+    inline void setRunnable(bool val) { runFlag = val; }
 
-    /*
+    /*    
      * Mark the task as non-runnable.
      */
     inline void resetRunnable() { runFlag = false; }
+
+    virtual bool isRtcTask(){return false;};
 
 protected:
     bool runFlag;   // True if the task is currently runnable.
@@ -73,13 +90,19 @@ public:
      * when - the system clock tick when the task should run, in milliseconds.
      */
     inline TimedTask(uint32_t when) { runTime = when; }
+    inline TimedTask(DateTime when) { runTime = 0; } // TODO 
 
     /*
      * Can the task currently run?
      * now - current system clock tick, in milliseconds.
-     */
+     */    
     virtual bool canRun(uint32_t now);
+    virtual bool canRun(DateTime dt_now);
+
     virtual bool canUpdate(uint32_t now){return false;};
+    virtual bool canUpdate(DateTime dt_now){return false;};
+      
+    //virtual bool isRtcEnabled();
 
 
     /*
@@ -99,10 +122,14 @@ public:
      * return - system clock tick when the task is next due to run.
      */
     inline uint32_t getRunTime() { return runTime; }
+    
+    virtual bool isRtcTask(){return false;};
+
 
 protected:
     
     uint32_t runTime;   // The  system clock tick when the task can next run.
+    DateTime* dt_runTime;
 };
 
 
@@ -110,20 +137,42 @@ class TriggeredTimeTask : public Task {
 
 public:
     virtual bool canRun(uint32_t now);
+    virtual bool canRun(DateTime dt_now);
+
     virtual bool canUpdate(uint32_t now);
+    virtual bool canUpdate(DateTime dt_now); 
+    
     uint32_t started() {return runTime; };
-    void setRunnable() ;
-    inline void resetRunnable() { runFlag = false; continueFlag = false; };
+    
+    virtual void setRunnable(bool value) ;
+    virtual void setRunnable() ;
+
+    inline void resetRunnable() { Runnable = false; continueFlag = false; };
     void runAgainIn(uint32_t t); 
+
     void runUpdateIn(uint32_t t); 
+
+    virtual bool isRtcTask(){return rtcTask;};
+    
+    virtual bool isRunnable() { return Runnable; }; 
+    virtual bool isRunning() { return Running; }; 
+
+    virtual bool isContinueFlag() { return continueFlag; }; 
 
 
 
 protected:
+    
     uint32_t runTime;   // The  system clock tick when the task can next run.
-    uint32_t runUpdateTime;   // The  system clock tick when the task can next run.
+    uint32_t runNextUpdateTime;   
 
-    bool runFlag;   // True if the task is currently runnable.
+    DateTime * dt_runTime; 
+    TimeSpan * dt_runUpdateTime; 
+
+    bool rtcTask;   // True if the task is currently runnable.
+
+    bool Runnable;
+    bool Running; 
     bool continueFlag;   // True if the task is currently runnable.
 
 };

@@ -12,10 +12,8 @@
 #include "Display.h"
 
 #include <LiquidCrystal_I2C.h>
-#include <LcdBarGraph.h> // no need
 
 LiquidCrystal_I2C lcd(0x3F, 20, 4);
-LcdBarGraph lbg(&lcd, 4);  // -- creating
 
   byte bar1[8] = { 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10};
   byte bar2[8] = { 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18};
@@ -35,9 +33,9 @@ LcdBarGraph lbg(&lcd, 4);  // -- creating
 //  |----------------|
 
 //  |--------------------|
-//  |HH:MM:SS  DD:MM:RRRR|
-//  |#35,3°C #35,3°C #100|
-//  | #
+//  |DD:MM:SS DD:MM:RR   |
+//  |#35,3°C #100%       |
+//  |####Progressbar#####| 
 //  |  CURRENT_STATUS ##1| status (0,15) connected clients (16,19) [ ##1], OTHERWISE status (0,19)
 //  |--------------------|
 
@@ -68,17 +66,9 @@ LCD::LCD(): Task()
    p_lcd->createChar(6, lock_part2);
    p_lcd->createChar(7, user);
    */
+    p_lcd->clear();
 
   
-}
-
-void LCD::update(uint32_t now){};
-
-
-
-bool LCD::canRun(uint32_t now)
-{
-  return Serial.available() > 0;
 }
 
 void LCD::writeCharTemperature(int row, int index)
@@ -93,12 +83,17 @@ void LCD::writeCharHumidity(int row, int index)
 }
 void LCD::run(uint32_t now)
 {
-  p_lcd->print("test");
-  Serial.println("-----------------");
-  Serial.print("LCD "); 
-  Serial.println("-----------------");
+  //p_lcd->print("test");
+  //Serial.println("-----------------");
+  //Serial.print("LCD "); 
+  //Serial.println("-----------------");
   
 }
+void LCD::run(DateTime dt_now)
+{
+  run(millis()); // call existing contructor
+}
+
 
 void LCD::drawProgressBar(int row, uint32_t var, uint32_t minVal, uint32_t maxVal)
 {

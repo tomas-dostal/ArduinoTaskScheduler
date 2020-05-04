@@ -9,10 +9,10 @@
 // *** Define the Debugger Class as type Task
 // ***
 #include "Task.h"
-#include "debugger.h"
-#include "display.h"
+#include "Debugger.h"
+#include "Display.h"
 
-#include "advanced_blinker.h"
+#include "AdvancedBlinker.h"
 
 
 

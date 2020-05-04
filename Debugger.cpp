@@ -38,8 +38,7 @@
 // ***
 // *** Debugger Constructor
 // ***
-Debugger::Debugger()
-  : Task()
+Debugger::Debugger(): Task()
   {
     Serial.begin(115200);
   }
@@ -51,14 +50,29 @@ bool Debugger::canRun(uint32_t now)
 {
   return Serial.available() > 0;
 }
+bool Debugger::canRun(DateTime dt_now)
+{
+  return Serial.available() > 0;
+}
 
 void Debugger::update(uint32_t now)
 {
   
 }
+
+void Debugger::update(DateTime dt_now)
+{
+  
+}
+
 // ***
 // *** Debugger::run() <--executed by TaskScheduler as a result of canRun() returning true.
 // ***
+
+void Debugger::run(DateTime dt_now)
+{
+  run(millis()); 
+}
 void Debugger::run(uint32_t now)
 {
   uint16_t byteCount = 0;

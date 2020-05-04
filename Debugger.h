@@ -17,9 +17,15 @@ public:
   Debugger();
   void debugWrite(String debugMsg); //Used for simple debugging of other tasks
   virtual void run(uint32_t now);   //Override the run() method
-  virtual void update(uint32_t now);   //Override the run() method
+  virtual void run(DateTime dt_now);   //Override the run() method
 
+  virtual void update(uint32_t now);   //Override the run() method
+  virtual void update(DateTime dt_now); 
+  
   virtual bool canRun(uint32_t now);  //Override the canRun() method
+  virtual bool canRun(DateTime dt_now);  //Override the canRun() method
+
   virtual bool canUpdate(uint32_t now) {return false;};  //Override the canRun() method
+  virtual bool canUpdate(DateTime dt_now) {return false;};  //Override the canRun() method
 
 };

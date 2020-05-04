@@ -9,30 +9,66 @@
 #include <Arduino.h>
 #endif
 
+#include "RTClib.h"
+RTC_DS3231 t; 
+
+
+
 #include "TaskScheduler.h"
 
 TaskScheduler::TaskScheduler(Task **_tasks, uint8_t _numTasks) :
   tasks(_tasks),
-  numTasks(_numTasks) {
+  numTasks(_numTasks), 
+  enableRTC(false)
+{
 }
-
-void TaskScheduler::runTasks() {
-    while (1) {
+/*TaskScheduler::TaskScheduler(Task **_tasks, uint8_t _numTasks) :
+  tasks(_tasks),
+  numTasks(_numTasks),
+  
+{
+}
+*/
+void TaskScheduler::runTasks() 
+{
+    while (1) 
+    {
+      //Serial.println("runTasks()"); 
         uint32_t now = millis();
+        DateTime dt_now = t.now(); 
+        
         Task **tpp = tasks;
-        for (int t = 0; t < numTasks; t++) {
+        for (int x = 0; x < numTasks; x++) 
+        {
             Task *tp = *tpp;
-            if (tp->canRun(now))
+            if(tp->isRtcTask())  // RTC task
             {
-                tp->run(now);
-                break;
+               if (tp->canRun(dt_now))
+                {
+                    tp->run(dt_now);
+                    break;
+                }
+                else if(tp->canUpdate(dt_now))
+                {
+                  tp->update(dt_now);
+                  break;
+                } 
             }
-            if(tp->canUpdate(now))
+            else // NON-RTC task
             {
-              tp->update(now);
-              break;
+                if (tp->canRun(now))
+                {
+                    tp->run(now);
+                    break;
+                }
+                else if(tp->canUpdate(now))
+                {
+                  tp->update(now);
+                  break;
+                }
             }
-            tpp++;
+            tpp++; // next Task
         }
+        yield; 
     }
 }

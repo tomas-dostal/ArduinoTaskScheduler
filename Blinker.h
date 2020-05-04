@@ -26,13 +26,22 @@ class Blinker : public TimedTask
 public:
   // Create a new blinker for the specified pin and rate.
   Blinker(uint8_t _pin, uint32_t _rate, Debugger *_ptrDebugger);
-  virtual void run(uint32_t now);
-  virtual void update(uint32_t now);
-
   
+  Blinker(uint8_t _pin, uint32_t _rate);
+
+  virtual void run(uint32_t now);
+  virtual void run(DateTime dt_now);
+
+  virtual void update(uint32_t now){};
+  virtual void update(DateTime dt_now){};
+  
+ // virtual bool canUpdate(uint32_t now){return false;};
+ // virtual bool canUpdate(DateTime dt_now){return false;};
+
 private:
   uint8_t pin;        // LED pin.
   uint32_t rate;        // Blink rate.
   bool on;          // Current state of the LED.
   Debugger *ptrDebugger;    // Pointer to debugger
+  bool debug_enabled; 
 };

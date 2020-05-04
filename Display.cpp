@@ -9,10 +9,10 @@
 #else
 #include <Arduino.h>
 #endif
-#include "display.h"
+#include "Display.h"
 
 #include <LiquidCrystal_I2C.h>
-#include <LcdBarGraph.h>
+#include <LcdBarGraph.h> // no need
 
 LiquidCrystal_I2C lcd(0x3F, 20, 4);
 LcdBarGraph lbg(&lcd, 4);  // -- creating

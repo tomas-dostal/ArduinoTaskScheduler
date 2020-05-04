@@ -120,13 +120,13 @@ Vytvořil jsem také sadu speciálních znaků, například
 
 ![teplota](img/temp.png)
 
-![vlhkost](img/hum/.png) 
+![vlhkost](img/hum.png) 
 
 a další, pro lepší orientaci v datech zobrazených na displeji. 
 
 Displej testovacího zapojení vypadá v současnosti takto: 
 
-![vlhkost](img/displej/.jpg) 
+![displej](img/displej.jpg) 
 
 ``` c
 //  |--------------------|

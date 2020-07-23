@@ -33,11 +33,7 @@
     Licence: Unknown
 
 
-
-   
-    Author of modification of modification of... eeh: 
-  
-    Tomas Dostal admin@dostál.eu (https://dostál.eu)
+    Modified by: Tomas Dostal <t@xn--dostl-0qa.eu> <t@dostál.eu> https://xn--dostl-0qa.eu
     ArtuinoTaskScheduler https://github.com/tomas-dostal/ArduinoTaskScheduler
     
      * **************************************************************************************
@@ -47,8 +43,8 @@
 #include <Arduino.h>
 
 // ***
-// *** Include Task Scheduler library
-// *** (should be located in same folder as this .ino file)
+// *** Include all Classes you want to use
+// *** Necessary ones: "Task.h", "TaskScheduler.h", ("RTClib.h")
 // ***
 
 #include "Task.h"
@@ -60,42 +56,13 @@
 #include "AdvancedBlinker.h"
 #include "Temperature.h"
 #include "PrintTime.h"
-#include "OneTimeExecute.h"
+#include "TimeExecute.h"
+#include "Button.h"
 
 
 // setup RTC:
 #include "RTClib.h"
 RTC_DS3231 myrtc;
-
-
-
-// ***
-// *** Pinout for Arduino Uno
-// ***
-#define PHOTOCELL_PIN			1
-#define LED_BLINKER				LED_BUILTIN
-#define LED_FADER				LED_BUILTIN
-#define LED_LIGHTLEVEL_ALARM	4
-#define LED_LIGHTLEVEL_OK		5
-
-
-#define TEMP_REALOAD   5000
-#define TEMP_PIN    D8
-
-
-// ***
-// *** Timed Task intervals
-// ***
-#define RATE_PHOTOCELL_READING	3000	//Read Photocell	- Timed Task
-#define RATE_BLINKER_BLINK	200		//Blink LED_BLINKER	- Timed Task
-#define RATE_FADER_FADE			50		//Fade LED_FADER	- Timed Task
-
-// ***
-// *** Utility defines
-// ***
-#define INCREMENT_FADER_STEP			5	//Value used to increment/decrement LED_FADER
-#define LIGHT_LEVEL_LOWER_THRESHOLD		300	//Value used to determine if LightLevelAlarm is triggered
-
 
 
 /**************************************************************************************
@@ -105,10 +72,13 @@ RTC_DS3231 myrtc;
 **************************************************************************************/
 void setup()
 {
+   Wire.begin(D4,D5); //  Wire.begin(SDA,SCL) I had to move SDA, SCL pins. Feel free to comment this line
+   
   Serial.begin(115200);
+
   while (! myrtc.begin()) {
     Serial.println("Couldn't find RTC");
-    yield;
+    yield();  // needed for ESP8266, otherwise creshes
   }
 
   if (myrtc.lostPower()) {
@@ -133,7 +103,6 @@ void setup()
 // Main Loop
 void loop()
 {
-  Serial.println("TESt");
   /***************************************************************************************
   	Description:	Instantiate the tasks and schedule task priority.
   	Purpose:		This is the heart of the program.  All of the needed code has been
@@ -149,30 +118,59 @@ void loop()
   // ***
   // *** Instantiate the task objects for use by the TaskScheduler
   // ***
+
+  // debugger instance 
   Debugger			debugger;
+  debugger.setTaskName("Debugger controller"); 
 
+  // LCd instance - if you have different screen that 20x4, modify Display.cpp
   LCD           mylcd;
+  mylcd.setTaskName("LCD controller"); 
 
 
-  Blinker				blinker(LED_BLINKER,
-                        RATE_BLINKER_BLINK);
+  // *************** START HERE *******************
 
-  Temperature   temperature(TEMP_PIN,
-                            TEMP_REALOAD,
-                            &debugger, &mylcd);
-  // OneTimeExecute::OneTimeExecute(String _taskname, uint8_t _pin, DateTime _dt_startTime, TimeSpan _dt_activeTime, Debugger *_ptrDebugger, LCD * _ptr_lcd)
+  // simple Blinker class. blinker(PIN, periodInMilliseconds, pointerToDebugger); 
+  Blinker				blinker(LED_BUILTIN, 400, &debugger);
+  blinker.setTaskName("Blinker 1"); 
 
-  OneTimeExecute  onetimeexecute("OneTimeExecute", D6, 10000 , &debugger, &mylcd);
-  DateTime d (2020, 5, 4, 21, 04, 45);
+  // Temperature ( sensorPin, refreshInMS, debuggerPoiner, lcdPointer); 
+  Temperature   temperature(D8, 4000, &debugger, &mylcd);
+  temperature.setTaskName("Temperature"); 
 
-  TimeSpan ts (0, 0, 1, 12);
-  OneTimeExecute  onetimeexecute2("Test@", D6, &d , &ts, &debugger, &mylcd);
-  onetimeexecute2.setRunnable();
+  
+  //  TimeExecute  timeexecute(LED_PIN, DELAY_FROM_START, ACTIVE_TIME, &debugger, &mylcd);
+  TimeExecute  t(D8, 500, 6000 , &debugger, &mylcd);
+  t.setRunnable(true);          // you have to set the task runnable to be executed 
+  t.setPeriod(5000);            // if you want the task to repeat, set repeat period. It is a time after the task ends. 
+  t.setTaskName("Watering..."); // You might want to set name to the task. It 
+  t.showProcessName(true); 
+  t.showProgressBar(true); 
+  //t.invertOutput();            // In case you need to invert output (e.g. rellay runs on logical LOW), uncomment this line 
 
-  onetimeexecute.setRunnable();
+  // now add button to controll TimeExecute t. 
+  // Button (buttonPin, pointerToInstanceToBeControlled, pointerToDebugger)
+  Button btn1 (D6, &t, &debugger); 
+  btn1.setRunTime(100); // run 100ms after start 
+  
 
-  PrintTime     printtime( 1000,
-                           &debugger, &mylcd);
+  // PrintTime (refreshInMS, debuggerPoiner, lcdPointer); 
+  PrintTime printtime( 500, &debugger, &mylcd);
+  printtime.setTaskName("PrintTime"); 
+
+   
+  DateTime startTime (2020, 7, 21, 22, 18 , 30);
+  TimeSpan activeTime ( 0, 0, 0, 20); // ( days, hours, minutes, seconds)
+  
+  TimeExecute  te2(D1, &startTime , &activeTime, &debugger, &mylcd);
+  te2.setRunnable(true);
+  te2.setTaskName("TimeExecute2");
+
+
+
+  TimeExecute  timeexecute3(LED_BUILTIN, 1000 , &debugger, &mylcd);
+  
+
 
   /*
 
@@ -206,30 +204,29 @@ void loop()
   // *** of all the tasks, communicating with the Serial Monitor via the Debugger object is the by
   // *** far the biggest tax on the MCU, but can be removed fairly from your final release. Have fun.
   // ***
-  Serial.println("TEST");
+  
+  // ********************** Add/modify instances you want to run here *****************
   Task *tasks[] = {
 
     &debugger,
-
     &blinker,
-    &onetimeexecute,
-    &onetimeexecute2,
-
+    &t,
+    &te2,
     &printtime,
     &temperature,
-    &mylcd // here might be an error
-
-    /*
-      &advancedBlinker,
-      &fader,
-      &lightLevelAlarm,
-    */
+    &btn1,
+    &mylcd // this should be last one
+    //&advancedBlinker,
+    //&fader,
+    //&lightLevelAlarm,
   };
 
   // ***
   // *** Instantiate the TaskScheduler and fill it with tasks.
   // ***
-  TaskScheduler scheduler(tasks, NUM_TASKS(tasks));
+
+
+  TaskScheduler scheduler(tasks, sizeof(tasks)/sizeof(tasks[0]) /*NUM_TASKS(tasks)*/, &myrtc);
   
   // GO! Run the scheduler - it never returns.
 

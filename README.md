@@ -1,73 +1,34 @@
-> This will be main project site... Soon. Hopefully. One day I'll translate (at least a part of it) to english. Please come back later. 
+
+This project is a modification of  Kevin Gagnon's [TaskScheduler](    https://github.com/gadgetstogrow/TaskScheduler)
+  
+
+## Planning options
+
+There are many possibilities for planning. Things you can do (e.g.): 
+
++ Switch the output PIN once for X milliseconds (switched by time)
++ Switch the output PIN once for X milliseconds (switched by e.g. button press)
++ Switch the output PIN periodically 
++ Switch the output PIN once on 31st of October 2020
++ Switch the output PIN once on 31st of October 2020 and repeat every 7 days
+...
 
 
-# ArduinoTaskScheduler (Automatický zavlažovač skleníku)
-
-> Zdrojové soubory k projektu jsou uloženy na Github [repozitáři projektu](https://github.com/tomas-dostal/ArduinoTaskScheduler) 
-
-Cílem této semestrální práce je vytvořit kompletní řešení pro automatické zavlažování skleníků. V souvislosti s tím bych chtěl vytvořit/upravit  plánovač, který by byl jednoduše rozšiřitelný a upravitelný a použitelný i v dalších mých projektech. 
-
-## Možnosti plánování
-
-- jednorázově sepnout daný výstup A po dobu X vteřin
-- jednorázově sepnout daný výstup A po dobu X vteřin na základě nějaké vnější události (např. stisk tlačítka, teplotní senzor, světelný senzor) 
-- opakovaně spínat daný výstup A po dobu X vteřin s periodou Y vteřin
-- Pokročilé plánování např. sepni výstup ve středu, 1. dubna 2020 v 22:00 na dobu 10 vteřin. 
-
-## Vstupy
-
-V projektu budu pracovat s následujícími vstupy: 
-
-- Senzor DHT11 (teplota + vlhkost)
-- Senzor vlhkosti půdy
-- Tlačítko
-- RTC modul DS3231
 
 
-## Výstupy
+# TASK
 
-- Displej 20x4 připojený přes I2C
-- Notifikační LED
-- Relé/tranzitor spínající čerpadlo
-- (dle možností Webové rozhraní)
+There are several types of tasks (some of them supports RTC, some of them not). RTC is "enabled" by constructor used, you can check if it was used by calling ```isRtcTask()```. 
 
-# Zapojení 
+The task can have a name (might be used for display printout) and have IDs (which are set during the first run). IDs are useful when there are several processed making output to the display at the same time. 
 
-![](BI-ARD_semestralka/img/zapojeni.png)
-Vytvořeno v [Circuit.io ](https://www.circuito.io/static/reply/index.html?solutionId=5eb060397c4b880030747f86&solutionPath=storage.circuito.io)
+You can set name of the task using ```taskname.setName("testname");```.  
 
-## Seznam součátek
-+ RTCNodeMCUv1.0 modul 
-+ 20X4 displej I2C
-+ Senzor vlhkosti a teploty DHT11
-+ Relé modul 
-+ Senzor vlhkosti půdy 
-+ 2ks rezitor 10kOhm 
-+ tlačítko 
 
-## Přidáno následující
 
-Oproti výchozí verzi (viz Credits) jsem provedl následující změny
+# TaskSheduller 
 
-+ možnost plánování pomocí data a času
-+ strukturování do jednotlivých souborů pro lepší přehlednost 
-+ přidání dalších možností spínání
-+ přidání možnosti update (slouží například k vykreslování na displej. Mezi spuštěním např. zalévání a vypnutím je třeba několik minut. Díky update můžu na displej zobrazit současný stav, zbývající čas atd...)
-+ přidání progress baru do třídy ovládající displej 
-
-# Uživatelská čast
-
-Kód z uživatelského hlediska funguje tak, že se v hlavním souboru *ArduinoTaskScheduler.ino* vytvářejí jednotlivé úlohy, například 
-
-``` c 
-  Temperature   temperature(TEMP_PIN,		// pin of DHT11 sensor
-                TEMP_REALOAD,				// call period
-               &debugger,					// debugger instance (Serial)
-               &lcd);						// LCD I2C 20x4 instance 
-```
-
-Konkrétně tato úloha je rozšíření třídy TimedTask. 
-Takovéto úlohy se pak podle priority vloží do pole pointerů *tasks[]
+This is kinda loop that executes all tasks. Tasks are in an array, 
 
 ``` c 
 Task *tasks[] = {
@@ -79,7 +40,118 @@ Task *tasks[] = {
 };
 ``` 
 
-Součásti, které stojí za zmínku jsou **Debugger**
+executed one by one (if they are allowed to run). There is not a priority set - it goes from the first task from the array until the last task and over. 
+
+
+## TimeExecute: TriggeredTimeTask()
+
+There are several options of use. Prepared constructors are: 
+
+| x | DateTime | SimpleClock | SimpleClock delay  |
+| --- | :------: |:------:| :------:|
+| Pin switching | uint8_t _pin      | uint8_t _pin     |   uint8_t _pin |
+| When it turns on | DateTime *_dt_startTime |  (immediately)  | uint32_t _delay |
+| How long is turned on | TimeSpan* _dt_activeTime | uint32_t _active_time | uint32_t _active_time |
+| Debugger pointer | Debugger *_ptrDebugger | Debugger *_ptrDebugger | Debugger *_ptrDebugger |
+| LCD pointer | LCD * _ptr_lcd | LCD * _ptr_lcd | LCD * _ptr_lcd |
+| Usage | You want to switch on the device connected to _pin at a specific time (and keep it on during for activeTime), even if something goes wrong with Arduino's power source (time is used from external RTC module) | You want to turn on the device connected to _pin right after Arduino turns and keep it on during for activeTime. It happens every time Arduino "boots"  |  You want to turn on the device connected to _pin with _delay from Arduino's start and keep it on during for activeTime. It happens every time Arduino "boots" |
+
+This kind of function uses 
+```     
+uint32_t runTime;   // The system clock tick when the task can run.
+uint32_t stopTime;  // The system clock tick when the task stops.
+uint32_t runNextUpdateTime;    
+``` 
+(or RTC alternative) 
+```
+DateTime  dt_runTime; 
+DateTime  dt_stopTime; 
+TimeSpan  dt_runUpdateTime; 
+``` 
+
+to define when the function starts, ends and updates. The most important one is Update because it allows us to print something on display. 
+
+To run this task you **have to set it runnable** ```  taskanme.setRunnable(true);``` or ```taskanme.setRunnable();```. Otherwise it will not start. 
+
+### Periodical run
+You can set Periodic run using  
+```   
+example.setPeriod(uint32_t time_in_miliseconds); // auto enables period
+example.setPeriod(TimeSpan ts); // auto enabled period
+```
+(depends if RTC constructor was used).
+
+If you don't want to disable period, you can use\
+
+```
+example.disablePeriod();
+```
+
+**Limits: ** If you are using TimeSpan (RTC), the shortest period is 1 second. If you need less, you might want to use/modify class Blinker. 
+
+
+
+This
+Cílem této semestrální práce je vytvořit kompletní řešení pro automatické zavlažování skleníků. V souvislosti s tím bych chtěl vytvořit/upravit  plánovač, který by byl jednoduše rozšiřitelný a upravitelný a použitelný i v dalších mých projektech. 
+
+
+
+
+## Example setup
+![](BI-ARD_semestralka/img/zapojeni.png)
+Vytvořeno v [Circuit.io ](https://www.circuito.io/static/reply/index.html?solutionId=5eb060397c4b880030747f86&solutionPath=storage.circuito.io)
+
+### list of parts 
++ RTCNodeMCUv1.0 modul 
++ 20X4 dispay connected through I2C
++Temperature and humidity sensor DHT11
++ Rellay module
++ Soil moisture sensor 
++ 2pcs resitor 10kOhm 
++ Push-button 
+
+## What is different from previous versions
+
+Compared to the previous versions (see Credits) there are following features
+
++ Planning with RTClib (like turn PIN ON on 1.1.2020 at 4:53 PM)
++ As the project grew I decided to separate it to several files
++ You can use Update() function in case you want to write something on the screen when a process is running
++ Added class Button for controlling events e.g. If button long pressed, then run some task. Short press to stop the task.
++ Added class Display (used through the entire project), use to display data and progress bar easily on the screen. This class can be used from various  other classes
++ Special set of chars for 20x4 or 16x2 type of screen (e.g. humidity char, temperature char, wifi char etc.)
+
+
+# Quickstart
+
+After you download the source code, open ArduinoIDE (install required libraries) and start here: 
+
+There in file *ArduinoTaskScheduler.ino* add/remove/modify tasks. First, you have to create an instance of a class, e.g.
+
+``` c 
+		// Blinker blinker(output led pin, period (ms), pointer to debugger)
+    Blinker	blinker(D1, 400, &debugger);
+                        
+```
+
+To keep features like Debug, Display etc. you must not delete its instances. 
+
+Then you have to add the instance's pointer to tasks array. 
+
+```
+  Task *tasks[] = {
+
+    &debugger,
+    **&blinker,**
+    ...
+    &mylcd 
+  };
+
+``` 
+Then just compile and run. 
+
+
+There are important classes you will probably use in your projects. I just wanted to mention them. You will use them only if the classes I made are not enough. 
 
 ### Debugger 
 
@@ -94,157 +166,40 @@ public:
 }
 ``` 
 
-a LCD 
+an LCD 
 
 ### LCD 
 
-``` c
-class LCD : public Task
-{
-public:
-  LCD();
-  void writeString(String text); 
-  void writeLine(int index, String text);
-  void writeLineFrom(int row, int index, String text);
-
-  void drawProgressBar(int row, uint32_t var, uint32_t minVal, uint32_t maxVal);
-
-  void writeCharTemperature(int row, int index);
-  void writeCharHumidity(int row, int index);
-
-  void clearAll(); //Used for simple debugging of other tasks
-  void clearLine(int line); //Used for simple debugging of other tasks
-	(...) 
-
-};
 ``` 
 
-Vytvořil jsem také sadu speciálních znaků, například 
+You can use some special characters created, like 
 
-![teplota](BI-ARD_semestralka/img/temp.png)
+|:------:| :------:|
+| ![teplota](BI-ARD_semestralka/img/temp.png) | ![vlhkost](BI-ARD_semestralka/img/hum.png)  |
 
-![vlhkost](BI-ARD_semestralka/img/hum.png) 
+for better orientation on screen. 
+![screen example](BI-ARD_semestralka/img/displej.jpg) 
 
-a další, pro lepší orientaci v datech zobrazených na displeji. 
+# Credit section
+Original author: Alan Burlison, Copyright Alan Burlison, 2011
++ Original [source code](http://bleaklow.com/files/2010/Task.tar.gz)
 
-Displej testovacího zapojení vypadá v současnosti takto: 
++ link to [original project website](http://bleaklow.com/2010/07/20/a_very_simple_arduino_task_manager.html)
 
-![vlhkost](BI-ARD_semestralka/img/displej.jpg) 
-
-``` c
-//  |--------------------|
-//  |DD:MM:SS DD:MM:RR   |
-//  |#35,3°C #100%       |
-//  |####Progressbar#####| 
-//  |  CURRENT_STATUS ##1| status (0,15) connected clients (16,19) [ ##1], OTHERWISE status (0,19)
-//  |--------------------|
-``` 
-# Popis fungování
+Author of the modification from 17.03.2019 which I used in this project is Kevin Gagnon  [github project](https://github.com/gadgetstogrow/TaskScheduler)
 
 
-
-Výchozí třídou je **Task**. 
-
-``` c 
-// Task.h header 
-class Task 
-{
-public:
-    virtual bool canRun(DateTime dt_now) = 0;   	// return true, if the task can run now
-    virtual bool canUpdate(DateTime dt_now) = 0; 	// return true, if the task can update now
-    virtual void run(DateTime dt_now) = 0;    		// setup this 
-    virtual void update(DateTime dt_now) = 0; 		// setup this 
-    
-		// backwards compatibility
-    /*
-     * Can the task currently run?
-     * now - current time, in milliseconds.
-     */ 
-    virtual bool canRun(uint32_t now) = 0;		
-    /*
-     * Can the task currently update (runned before)?
-     * now - current time, in milliseconds.
-     */ 
-    virtual bool canUpdate(uint32_t now) = 0;    
-   	/*
-     * Run the task,
-     * now - current time, in milliseconds.
-     */
-    virtual void run(uint32_t now) = 0;			
-    virtual void update(uint32_t now) = 0;
-
-		// to be able to differ if DateTime version is used for the task
-    virtual bool isRtcTask() { return false; };
-
-};
-``` 
-Z ní vychízejí třídy **TriggeredTask** , **TimedTask** a **TriggeredTimeTask**. 
-S polem Tasků pak pracuje třída TaskSheduller, která je podle pořadí v poli (vstupní argument) spouští.  
-
-``` c 
-// TaskSheduler.h 
-
-#include "Task.h"
-
-// Calculate the number of tasks in the array, given the size.
-#define NUM_TASKS(T) (sizeof(T) / sizeof(Task))
-
-class TaskScheduler 
-{
-
-public:
-    /* Create a new task scheduler.  Tasks are scheduled in priority order,
-     * where the highest priority task is first in the array, and the lowest
-     * priority task is the last. 
-     */
-    TaskScheduler(Task **task, uint8_t numTasks);
-    TaskScheduler(Task **task, uint8_t numTasks, RTC_DS3231 * rtc);
-
-    void runTasks();
-
-private:
-    Task **tasks;   // Array of task pointers.
-    int numTasks;   // Number of tasks in the array.
-    bool enableRTC; 
-    RTC_DS3231 * rtc; 
-
-};
-
-``` 
-
-V tuto chvíli používám kontruktor bez parametru RTC_DS3231, ale do budoucna jej chci nechat až jako sekundární. Jak je z úryvků kódu asi poznat, snažil jsem se o jakousi zpětnou kompatibilitu pro případ, že bych chtěl ArduinoTaskSheduller použít někde, kde není k dispozici RTC modul. Části kódu, kde se toto používá bych pak obalil do podmíněného překladu. 
-
-Tím, že chci, aby TaskScheduler kód uměl pracovat s Tasky pracující s DateTime (navázán na RTC modul), musím si u každého Tasku pamatovat, jestli se jedná o běžný Task, nebo RTC Task (podle použitého konstruktoru).  
+## 3rd party libraries used
 
 
-
-# Credit sekce
-Myšlenka, díky které toto celé funguje, není má. Vycházel jsem z již existujících kódů, které se mi zalíbily natolik, že jsem se rozhod je upravit a rozšířit.  
-
-Původním autorem je Alan Burlison, Copyright Alan Burlison, 2011
-
-+ Původní [zdrojový kód](http://bleaklow.com/files/2010/Task.tar.gz)
-
-+ odkaz na [webové stránky projektu](http://bleaklow.com/2010/07/20/a_very_simple_arduino_task_manager.html)
+   CREDIT: other libraries
++ [Adafruit library (DHT sensor)](https://github.com/adafruit/DHT-sensor-library) Licence: MIT
++ [Adafruit library (RTClib)](https://github.com/adafruit/RTClib)  Licence: MIT
++ [Adafruit Unified Sensor (for RTClib)](https://github.com/adafruit/Adafruit_Sensor)  Licence: Apache 2
++ [LiquidCrystal_I2C](https://www.arduinolibraries.info/libraries/liquid-crystal-i2-c) Licence: Unknown
++ class Display: DrawProgressBar inspired by [Arduino Forum](https://forum.arduino.cc/index.php?topic=180678.0)   Licence: Unknown
 
 
-Autorem modifikace ze dne 17.03.2019, ze které jsem vycházel je Kevin Gagnon (@GadgetsToGrow  [osobní stránky](https://www.hackster.io/GadgetsToGrow)) 
-
- +  Vycházel jsem z tohoto [github projektu](https://github.com/gadgetstogrow/TaskScheduler)
-
-Při práci jsem také použil knihovny třetích stran, nebo se někde inspiroval, jmenovitě 
-
- *  Adafruit library [(DHT sensor)](https://github.com/adafruit/RTClib)
-
- *  Adafruit  [RTClib](https://github.com/adafruit/DHT-sensor-library)
-
-* Adafruit Unified Sensor (součást RTClib) [zde](https://github.com/adafruit/Adafruit_Sensor)
-
- *  LiquidCrystal_I2C [zroj](https://www.arduinolibraries.info/libraries/liquid-crystal-i2-c)
-
- * Display:DrawProgressBar [inspirace](https://forum.arduino.cc/index.php?topic=180678.0) 
-
-
-Tento seznam nemusí být kompletní a vždy aktuální. Kompletní přehled najdete vždy v hlavičce souboru *ArduinoTaskSheduller.ino*. 
+This list might not be always up to date. Please take a look also to  **ArduinoTaskSheduller.ino**.  If I used your code and forgot to mention, I am deeply sorry. Just feel free to contact me and I'll fix that. Thank you. 
 
 

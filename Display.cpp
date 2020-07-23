@@ -1,5 +1,6 @@
 /**************************************************************************************
   Description:  ArduinoTaskSheduller Display class
+  Type:         Simple Task
   Purpose:      Something like universal interface modified to work properly with 
                 20x4 I2C display.
 
@@ -21,13 +22,14 @@
 //  OTHERWISE status (0,19)
 //  |--------------------|
 
-
-  Wrote-modified by: Tomas Dostal <t@xn--dostl-0qa.eu> <t@dostál.eu>
-
+  
+  Modified by: Tomas Dostal <t@xn--dostl-0qa.eu> <t@dostál.eu> https://xn--dostl-0qa.eu
+  
+  I see no reason to place directly here original copyright. If I am wrong, please feel
+  free to contact me. 
  
 **************************************************************************************/
-
-
+ 
 #if ARDUINO < 100 
     #include<WProgram.h>
 #else #include<Arduino.h>

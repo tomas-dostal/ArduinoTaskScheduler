@@ -170,12 +170,17 @@ an LCD
 
 ### LCD 
 
-``` 
+> this section is not ready yet. Please check source code of [Display.cpp](Display.cpp) / [Display.h](Display.h)
+
+Features
+
++ progress bar
++ special characters
+
 
 You can use some special characters created, like 
 
-|:------:| :------:|
-| ![teplota](BI-ARD_semestralka/img/temp.png) | ![vlhkost](BI-ARD_semestralka/img/hum.png)  |
+ ![teplota](BI-ARD_semestralka/img/temp.png)  ![vlhkost](BI-ARD_semestralka/img/hum.png)  
 
 for better orientation on screen. 
 ![screen example](BI-ARD_semestralka/img/displej.jpg) 

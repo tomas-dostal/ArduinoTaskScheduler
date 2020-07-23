@@ -1,22 +1,16 @@
-/*
- * Copyright 2011 Alan Burlison, alan@bleaklow.com.  All rights reserved.
- * Use is subject to license terms.
- */
+/**************************************************************************************
+  Description:  ArduinoTaskSheduller Debugger class
+  Type:         Simple Task
+  Purpose:      Universal interface for debugging
 
+  Based on: Kevin Gagnon https://github.com/gadgetstogrow/TaskScheduler
 
-#if ARDUINO < 100
-#include <WProgram.h>
-#else
-#include <Arduino.h>
-#endif
+  Original copyright: Copyright 2011 Alan Burlison, alan@bleaklow.com.
+  All rights reserved. Use is subject to license terms.
 
-// *** Define the Debugger Class as type Task
-// ***
-#include "Task.h"
-#include "Debugger.h"
+  Modified by: Tomas Dostal <t@xn--dostl-0qa.eu> <t@dostál.eu> https://xn--dostl-0qa.eu
 
-
-
+**************************************************************************************/
 /*****************************************************************************************
 *  Class:    Debugger
 * Task Type:  Task (always runs)
@@ -31,79 +25,96 @@
 *
 *       To output debug information use: ptrDebugger->debugWrite("debug info");
 *
-* Notes:    Yeah, I lazily used the String() function in this demonstration. Suedfbvbvfbfvvvvvvvb  me.            
+* Notes:    Yeah, I lazily used the String() function in this demonstration. Suedfbvbvfbfvvvvvvvb
+*me.
 ******************************************************************************************/
+
+
+#if ARDUINO < 100
+#include <WProgram.h>
+#else
+#include <Arduino.h>
+#endif
+
+// *** Define the Debugger Class as type Task
+// ***
+#include "Task.h"
+#include "Debugger.h"
 
 
 // ***
 // *** Debugger Constructor
 // ***
-Debugger::Debugger(): Task()
-  {
-    Serial.begin(115200);
-  }
 
-// ***
-// *** Debugger::canRun() <--checked by TaskScheduler
-// ***
+Debugger::Debugger(int costumBaudRate)
+    : Task()
+{
+    Serial.begin(costumBaudRate);
+    Serial.println("Debugger costumBaudRate OK");
+}
+Debugger::Debugger()
+    : Task()
+{
+    Serial.begin(115200);
+    Serial.println("Debugger OK");
+}
+
 bool Debugger::canRun(uint32_t now)
 {
-  return Serial.available() > 0;
+    return Serial.available() > 0;
 }
 bool Debugger::canRun(DateTime dt_now)
 {
-  return Serial.available() > 0;
+    return Serial.available() > 0;
 }
 
+// there is no need to update since it is a simple Task
 void Debugger::update(uint32_t now)
 {
-  
 }
 
+// there is no need to update since it is a simple Task
 void Debugger::update(DateTime dt_now)
 {
-  
 }
 
-// ***
-// *** Debugger::run() <--executed by TaskScheduler as a result of canRun() returning true.
-// ***
 
+// Debugger::run() <--executed by TaskScheduler as a result of canRun() returning true.
 void Debugger::run(DateTime dt_now)
 {
-  run(millis()); 
+    run(millis());
 }
 void Debugger::run(uint32_t now)
 {
-  uint16_t byteCount = 0;
-  
-  Serial.println("-----------------");
-  Serial.println("Input Received...");
-  Serial.println("-----------------");
-  while (Serial.available() > 0) {
-    int byte = Serial.read();
-    Serial.print("'") ;
-    Serial.print(char(byte));
-    Serial.print("' = ");
-    Serial.print(byte, DEC);
-    Serial.println(" ");
-    if (byte == '\r') {
-      Serial.print('\n', DEC);
+    uint16_t byteCount = 0;
+
+    Serial.println("-----------------");
+    Serial.println("Input Received...");
+    Serial.println("-----------------");
+    while (Serial.available() > 0)
+    {
+        int byte = Serial.read();
+        Serial.print("'");
+        Serial.print(char(byte));
+        Serial.print("' = ");
+        Serial.print(byte, DEC);
+        Serial.println(" ");
+        if (byte == '\r')
+        {
+            Serial.print('\n', DEC);
+        }
+
+        byteCount++;
     }
-    
-    byteCount++;
-  }
-  
-  Serial.println("-----------------");
-  Serial.print("Bytes Received: "); Serial.println(String(byteCount));
-  Serial.println("-----------------");
-  
+
+    Serial.println("-----------------");
+    Serial.print("Bytes Received: ");
+    Serial.println(String(byteCount));
+    Serial.println("-----------------");
 }
 
-// ***
-// *** Debugger::debugWrite() <--provides basic debug info from other tasks
-// ***
+// Debugger::debugWrite() Used to write debug messages from other tasks
 void Debugger::debugWrite(String debugMsg)
 {
-  Serial.println(debugMsg);
+    Serial.println(debugMsg);
 }
